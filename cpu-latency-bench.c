@@ -22,7 +22,6 @@ static inline uint64_t rdtsc(void) {
 
 /* ==================== Test Core ==================== */
 
-// Simple instructions (no FPU init needed)
 #define TEST(name, asm_code) \
     static double test_##name(int64_t iter) { \
         volatile int64_t count = iter; \
@@ -32,7 +31,6 @@ static inline uint64_t rdtsc(void) {
         return (end - start) / (double)iter; \
     }
 
-// x87 FPU instructions (need finit)
 #define TEST_FPU(name, asm_code) \
     static double test_##name(int64_t iter) { \
         volatile int64_t count = iter; \
@@ -43,7 +41,6 @@ static inline uint64_t rdtsc(void) {
         return (end - start) / (double)iter; \
     }
 
-// SSE/SIMD instructions
 #define TEST_SSE(name, asm_code) \
     static double test_##name(int64_t iter) { \
         volatile int64_t count = iter; \
@@ -70,30 +67,63 @@ TEST(mov,     "mov %eax, %ebx")
 TEST(cmp,     "cmp %eax, %eax")
 TEST(test,    "test %eax, %eax")
 
-// x87 FPU
-TEST_FPU(fadd,  "fadd %st(0), %st(0)")
-TEST_FPU(fsub,  "fsub %st(0), %st(0)")
-TEST_FPU(fmul,  "fmul %st(0), %st(0)")
-TEST_FPU(fdiv,  "fdiv %st(0), %st(0)")
-TEST_FPU(fsqrt, "fsqrt")
+// x87 FPU - finit BEFORE loop
+static double test_fadd(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");           // Once before loop
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fadd %st(0), %st(0)");
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
 
-// SSE Scalar (32-bit)
+static double test_fsub(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fsub %st(0), %st(0)");
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fmul(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fmul %st(0), %st(0)");
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fdiv(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fdiv %st(0), %st(0)");
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fsqrt(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fsqrt");
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+// SSE Scalar
 TEST_SSE(addss,  "addss %xmm0, %xmm0")
 TEST_SSE(mulss,  "mulss %xmm0, %xmm0")
 TEST_SSE(divss,  "divss %xmm0, %xmm0")
 TEST_SSE(sqrtss, "sqrtss %xmm0, %xmm0")
-
-// SSE Scalar (64-bit)
 TEST_SSE(addsd,  "addsd %xmm0, %xmm0")
 TEST_SSE(mulsd,  "mulsd %xmm0, %xmm0")
 TEST_SSE(divsd,  "divsd %xmm0, %xmm0")
 TEST_SSE(sqrtsd, "sqrtsd %xmm0, %xmm0")
-
-// Conversion
 TEST_SSE(cvtsi2ss, "cvtsi2ss %eax, %xmm0")
 TEST_SSE(cvtss2si, "cvtss2si %xmm0, %eax")
-
-// Move
 TEST_SSE(movss, "movss %xmm0, %xmm1")
 TEST_SSE(movsd, "movsd %xmm0, %xmm1")
 
