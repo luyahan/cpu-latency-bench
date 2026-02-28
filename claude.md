@@ -60,3 +60,10 @@ register_test("ROL", "Shift", 1.0, test_rol);
 
 - Intel 64 and IA-32 Architectures Optimization Reference Manual
 - Agner Fog's Instruction Tables
+
+---
+
+## Git Rules
+
+- **DO NOT push compiled binaries** - Only commit source code
+- Update `.gitignore` to exclude build artifacts
