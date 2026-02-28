@@ -95,12 +95,12 @@ static TestEntry g_tests[] = {
     {"CMP",   "Cmp",   1.0, test_cmp},
     {"TEST",  "Cmp",   1.0, test_test},
     // SSE 32-bit
-    {"ADDSS",  "SSE", 4.0, test_addss},
+    {"ADDSS",  "SSE", 3.0, test_addss},
     {"MULSS",  "SSE", 4.0, test_mulss},
     {"DIVSS",  "SSE", 14.0, test_divss},
     {"SQRTSS", "SSE", 14.0, test_sqrtss},
     // SSE 64-bit
-    {"ADDSD",  "SSE", 4.0, test_addsd},
+    {"ADDSD",  "SSE", 3.0, test_addsd},
     {"MULSD",  "SSE", 4.0, test_mulsd},
     {"DIVSD",  "SSE", 14.0, test_divsd},
     {"SQRTSD", "SSE", 14.0, test_sqrtsd},
