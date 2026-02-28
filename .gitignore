@@ -1,0 +1,25 @@
+# 编译产物
+*.o
+*.a
+*.so
+*.dylib
+latency_test_x64
+t1
+t2
+t3
+t4
+t5
+t6
+test_simple
+
+# 测试文件
+*.c
+
+# OpenClaw
+.openclaw/
+
+# PDF 文档 (可选)
+*.pdf
+
+# 配置
+config/
