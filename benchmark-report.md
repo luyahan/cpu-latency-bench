@@ -7,163 +7,74 @@
 
 ---
 
-## Official Data vs Measured Results
+## Test Results
 
-| Category | Instruction | Official (Intel Skylake) | Measured | Analysis |
-|----------|-------------|--------------------------|----------|----------|
-| **NOP** | `nop` | 1 cycle | 1.04 cycle | ✅ Match |
-| **ALU** | `add r32, r32` | 1 cycle | 1.11 cycle | ✅ Match |
-| **ALU** | `sub r32, r32` | 1 cycle | 2.30 cycle | ⚠️ Higher |
-| **Logic** | `xor r32, r32` | 1 cycle | 1.03 cycle | ✅ Match |
-| **Mul** | `imul r32, r32` | 3-4 cycle | 2.50 cycle | ⚠️ Lower |
-| **Shift** | `shl r32, 1` | 1 cycle | 1.22 cycle | ✅ Close |
-| **Stack** | `push/pop` | 1-2 cycle | 2.09 cycle | ✅ Close |
+| Category | Instruction | Expect | Actual | Result |
+|----------|-------------|--------|--------|--------|
+| **Basic** | NOP | 1.00 | 1.93 | FAIL |
+| **ALU** | ADD | 1.00 | 1.08 | PASS |
+| **ALU** | SUB | 1.00 | 0.82 | PASS |
+| **Logic** | XOR | 1.00 | 0.84 | PASS |
+| **Logic** | AND | 1.00 | 0.91 | PASS |
+| **Logic** | OR | 1.00 | 1.08 | PASS |
+| **Logic** | NOT | 1.00 | 1.23 | PASS |
+| **Mul** | IMUL | 3.00 | 1.20 | FAIL |
+| **Shift** | SHL | 1.00 | 1.81 | FAIL |
+| **Shift** | SHR | 1.00 | 1.29 | PASS |
+| **Move** | MOV | 1.00 | 0.96 | PASS |
+| **Cmp** | CMP | 1.00 | 2.55 | FAIL |
+| **Cmp** | TEST | 1.00 | 0.83 | PASS |
+| **x87** | FADD | 4.00 | 408.85 | FAIL |
+| **x87** | FSUB | 4.00 | 371.04 | FAIL |
+| **x87** | FMUL | 5.00 | 385.94 | FAIL |
+| **x87** | FDIV | 20.00 | 385.33 | FAIL |
+| **x87** | FSQRT | 20.00 | 385.89 | FAIL |
+| **SSE** | ADDSS | 4.00 | 1.58 | FAIL |
+| **SSE** | MULSS | 4.00 | 3.85 | PASS |
+| **SSE** | DIVSS | 14.00 | 8.68 | PASS |
+| **SSE** | SQRTSS | 14.00 | 11.18 | PASS |
+| **SSE** | ADDSD | 4.00 | 1.64 | FAIL |
+| **SSE** | MULSD | 4.00 | 4.33 | PASS |
+| **SSE** | DIVSD | 14.00 | 13.62 | PASS |
+| **SSE** | SQRTSD | 14.00 | 13.02 | PASS |
+| **Conv** | CVTSI2SS | 4.00 | 4.25 | PASS |
+| **Conv** | CVTSS2SI | 4.00 | 1.26 | FAIL |
+| **SSE** | MOVSS | 1.00 | 0.94 | PASS |
+| **SSE** | MOVSD | 1.00 | 2.10 | FAIL |
 
----
-
-## Official Data Sources
-
-### Intel Manual (Intel® 64 and IA-32 Architectures Optimization Reference Manual)
-
-| Instruction | Latency | Throughput | CPU |
-|------------|---------|------------|-----|
-| ADD/SUB | 1 | 0.5 | Skylake |
-| XOR (reg, reg) | 1 | 0.5 | Skylake |
-| IMUL (32-bit) | 3 | 1 | Skylake |
-| IDIV (32-bit) | 20-88 | 20-88 | Skylake |
-| SHL/SHR | 1 | 0.5 | Skylake |
-| POP | 1 | 0.5 | Skylake |
-| PUSH | 1 | 0.5 | Skylake |
-| CALL (near) | 2 | 1 | Skylake |
-| RET | 2 | 1 | Skylake |
-| JMP (near) | 1 | 0.5 | Skylake |
-| LOAD (L1 hit) | 4 | 1 | Skylake |
-| LOAD (L2 hit) | 12 | ~5 | Skylake |
-
-### AMD Zen 3 Reference
-
-| Instruction | Latency | Throughput |
-|------------|---------|------------|
-| ADD/SUB | 1 | 0.5 |
-| IMUL | 3 | 1 |
-| XOR | 1 | 0.33 |
-| SHL | 1 | 1 |
+**Total: 17/30 passed (56.7%)**
 
 ---
 
-## Difference Analysis
+## Analysis
 
-1. **SUB higher (2.30 vs 1)**:
-   - Possible loop overhead or CPU scheduling impact
-
-2. **IMUL lower (2.50 vs 3-4)**:
-   - Possible CPU turbo or virtualization impact
-   - Modern CPU multiplication unit optimization
-
-3. **Measurement error**:
-   - WSL2 virtualization layer adds overhead
-   - Recommend testing on real hardware
+- Integer instructions: Most pass within tolerance
+- x87 FPU: Very high latency due to `finit` overhead in loop
+- SSE instructions: Generally accurate for MUL/DIV/SQRT
+- WSL2 virtualization affects some measurements
 
 ---
 
-## Test Code
+## Official Data (Reference)
 
-```c
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-
-typedef struct {
-    const char* name;
-    const char* asm_code;
-    double expected;
-    double measured;
-} TestCase;
-
-#define TOLERANCE 0.5
-
-int main() {
-    TestCase tests[] = {
-        {"NOP", "nop", 1.0, 1.04},
-        {"ADD", "add %eax, %eax", 1.0, 1.11},
-        {"SUB", "sub %eax, %eax", 1.0, 2.30},
-        {"XOR", "xor %eax, %eax", 1.0, 1.03},
-        {"IMUL", "imul %eax, %eax", 3.0, 2.50},
-        {"SHL", "shl $1, %eax", 1.0, 1.22},
-    };
-    
-    int n = sizeof(tests) / sizeof(tests[0]);
-    int passed = 0;
-    
-    printf("========================================\n");
-    printf("x64 Instruction Latency Test Report\n");
-    printf("========================================\n\n");
-    
-    for (int i = 0; i < n; i++) {
-        double diff = tests[i].measured - tests[i].expected;
-        double diff_pct = (diff / tests[i].expected) * 100;
-        int ok = (diff_pct >= -TOLERANCE * 100 && diff_pct <= TOLERANCE * 100);
-        
-        printf("[%s] %s\n", ok ? "PASS" : "FAIL", tests[i].name);
-        printf("  Instruction: %s\n", tests[i].asm_code);
-        printf("  Expected:    %.2f cycles\n", tests[i].expected);
-        printf("  Measured:    %.2f cycles\n", tests[i].measured);
-        printf("  Diff:        %.1f%%\n\n", diff_pct);
-        
-        if (ok) passed++;
-    }
-    
-    printf("========================================\n");
-    printf("Result: %d/%d passed\n", passed, n);
-    
-    return (passed == n) ? 0 : 1;
-}
-```
+| Instruction | Intel Skylake Latency |
+|------------|---------------------|
+| ADD/SUB | 1 |
+| IMUL | 3-4 |
+| XOR/AND/OR | 1 |
+| SHL/SHR | 1 |
+| FADD/FSUB | 4 |
+| FMUL | 5 |
+| FDIV | 20 |
+| ADDSS/ADDSD | 4 |
+| MULSS/MULSD | 4 |
+| DIVSS/DIVSD | 14 |
+| SQRTSS/SQRTSD | 14 |
 
 ---
 
-## Conclusion
+## Notes
 
-| Metric | Result |
-|--------|--------|
-| Instructions tested | 6 |
-| Passed | 4 |
-| Failed | 2 |
-| Pass rate | 67% |
-
-**Note**: Virtualization affects some measurements; real hardware recommended.
-
----
-
-## Appendix: Full Official Data (Intel Skylake)
-
-```
-ADD       Latency: 1    Throughput: 0.5
-SUB       Latency: 1    Throughput: 0.5
-ADC       Latency: 1    Throughput: 0.5
-SBB       Latency: 1    Throughput: 0.5
-INC/DEC   Latency: 1    Throughput: 0.5
-NEG       Latency: 1    Throughput: 0.5
-CMP       Latency: 1    Throughput: 0.5
-TEST      Latency: 1    Throughput: 0.5
-AND       Latency: 1    Throughput: 0.5
-OR        Latency: 1    Throughput: 0.5
-XOR       Latency: 1    Throughput: 0.5
-NOT       Latency: 1    Throughput: 0.5
-
-IMUL (r32)   Latency: 3-4   Throughput: 1
-IDIV (r32)   Latency: 20-88 Throughput: 20-88
-
-SHL/SHR      Latency: 1    Throughput: 0.5
-SAR          Latency: 1    Throughput: 0.5
-ROL/ROR      Latency: 1    Throughput: 0.5
-
-MOV (reg)    Latency: 1    Throughput: 0.5
-MOV (mem)    Latency: 4    Throughput: 1     (L1 cache)
-PUSH        Latency: 1    Throughput: 0.5
-POP         Latency: 1    Throughput: 0.5
-
-CALL        Latency: 2    Throughput: 1
-RET         Latency: 2    Throughput: 1
-JMP         Latency: 1    Throughput: 0.5
-```
+- Run on real hardware for accurate results
+- WSL2 virtualization may cause variations
+- Some FAIL results are within acceptable range but exceed 50% tolerance
