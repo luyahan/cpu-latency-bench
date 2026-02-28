@@ -35,7 +35,7 @@ static inline uint64_t rdtsc(void) {
  * Add new instruction tests here
  * ============================================ */
 
-// Basic arithmetic
+// Basic integer
 TEST_INSN(nop,     "Basic", 1.0, "nop")
 TEST_INSN(add,     "ALU",   1.0, "add %eax, %eax")
 TEST_INSN(sub,     "ALU",   1.0, "sub %eax, %eax")
@@ -44,7 +44,7 @@ TEST_INSN(and,     "Logic", 1.0, "and %eax, %eax")
 TEST_INSN(or,      "Logic", 1.0, "or %eax, %eax")
 TEST_INSN(not,     "Logic", 1.0, "not %eax")
 
-// Mul/Div
+// Integer Mul/Div
 TEST_INSN(imul,    "Mul",   3.0, "imul %eax, %eax")
 
 // Shift
@@ -58,9 +58,184 @@ TEST_INSN(mov,     "Move",  1.0, "mov %eax, %ebx")
 TEST_INSN(cmp,     "Cmp",   1.0, "cmp %eax, %eax")
 TEST_INSN(test,    "Cmp",   1.0, "test %eax, %eax")
 
-/* Add new instruction example:
- * TEST_INSN(rol, "Shift", 1.0, "rol $1, %eax")
- */
+// ==================== Floating Point (x87) ====================
+
+static double test_fadd(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("fadd %st(0), %st(0)");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fsub(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("fsub %st(0), %st(0)");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fmul(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("fmul %st(0), %st(0)");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fdiv(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("fdiv %st(0), %st(0)");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_fsqrt(int64_t iter) {
+    volatile int64_t count = iter;
+    __asm__ volatile ("finit");
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("fsqrt");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+// ==================== SSE Floating Point ====================
+
+static double test_addss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("addss %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_addsd(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("addsd %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_mulss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("mulss %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_mulsd(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("mulsd %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_divss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("divss %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_divsd(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("divsd %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_sqrtss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("sqrtss %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_sqrtsd(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("sqrtsd %xmm0, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_cvtsi2ss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("cvtsi2ss %eax, %xmm0");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_cvtss2si(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("cvtss2si %xmm0, %eax");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_movss(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("movss %xmm0, %xmm1");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
+
+static double test_movsd(int64_t iter) {
+    volatile int64_t count = iter;
+    uint64_t start = rdtsc();
+    for (volatile int64_t i = count; i > 0; --i) {
+        __asm__ volatile ("movsd %xmm0, %xmm1");
+    }
+    uint64_t end = rdtsc();
+    return (end - start) / (double)iter;
+}
 
 /* ============================================
  * Instruction registry
@@ -82,6 +257,7 @@ static void register_test(const char* n, const char* c, double e, double (*f)(in
 }
 
 static void init_tests(void) {
+    // Integer
     register_test("NOP",   "Basic", 1.0, test_nop);
     register_test("ADD",   "ALU",   1.0, test_add);
     register_test("SUB",   "ALU",   1.0, test_sub);
@@ -95,7 +271,33 @@ static void init_tests(void) {
     register_test("MOV",   "Move",  1.0, test_mov);
     register_test("CMP",   "Cmp",   1.0, test_cmp);
     register_test("TEST",  "Cmp",   1.0, test_test);
-    /* Add more: register_test("NEW", "Category", expected, test_func); */
+
+    // x87 FPU
+    register_test("FADD",   "x87",  4.0, test_fadd);
+    register_test("FSUB",   "x87",  4.0, test_fsub);
+    register_test("FMUL",   "x87",  5.0, test_fmul);
+    register_test("FDIV",   "x87",  20.0, test_fdiv);
+    register_test("FSQRT",  "x87",  20.0, test_fsqrt);
+
+    // SSE Scalar (32-bit)
+    register_test("ADDSS",  "SSE",  4.0, test_addss);
+    register_test("MULSS",  "SSE",  4.0, test_mulss);
+    register_test("DIVSS",  "SSE",  14.0, test_divss);
+    register_test("SQRTSS", "SSE",  14.0, test_sqrtss);
+
+    // SSE Scalar (64-bit)
+    register_test("ADDSD",  "SSE",  4.0, test_addsd);
+    register_test("MULSD",  "SSE",  4.0, test_mulsd);
+    register_test("DIVSD",  "SSE",  14.0, test_divsd);
+    register_test("SQRTSD", "SSE",  14.0, test_sqrtsd);
+
+    // Conversion
+    register_test("CVTSI2SS", "Conv", 4.0, test_cvtsi2ss);
+    register_test("CVTSS2SI", "Conv", 4.0, test_cvtss2si);
+
+    // Move
+    register_test("MOVSS",  "SSE",  1.0, test_movss);
+    register_test("MOVSD",  "SSE",  1.0, test_movsd);
 }
 
 /* ============================================
@@ -124,7 +326,7 @@ int main(int argc, char* argv[]) {
     
     printf("Params: iter=%ld, runs=%d, tolerance=%.0f%%\n\n", iter, runs, TOLERANCE*100);
     
-    printf("%-10s %-8s %-8s %-8s %-6s\n", "Instr", "Cat", "Expect", "Actual", "Result");
+    printf("%-12s %-8s %-8s %-8s %-6s\n", "Instr", "Cat", "Expect", "Actual", "Result");
     printf("------------------------------------------------------------\n");
     
     int passed = 0;
@@ -140,7 +342,7 @@ int main(int argc, char* argv[]) {
         int pass = (diff_pct <= TOLERANCE * 100);
         if (pass) passed++;
         
-        printf("%-10s %-8s %-8.2f %-8.2f [%s]\n",
+        printf("%-12s %-8s %-8.2f %-8.2f [%s]\n",
                g_tests[i].name, g_tests[i].category,
                g_tests[i].expected, measured,
                pass ? "PASS" : "FAIL");
