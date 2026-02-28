@@ -1,10 +1,12 @@
-# x64 指令延迟测试框架
+# CPU Latency Bench
+
+x86/x64 CPU 指令延迟测量工具
 
 ## 编译运行
 
 ```bash
-gcc -O0 -o latency_test_x64 latency_test_x64.c -lm
-./latency_test_x64 [迭代次数] [测试次数]
+gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
+./cpu-latency-bench [迭代次数] [测试次数]
 ```
 
 ## 参数
@@ -16,10 +18,10 @@ gcc -O0 -o latency_test_x64 latency_test_x64.c -lm
 
 ```
 ============================================================
-           x64 指令延迟测试框架 v2.0
+           CPU Latency Bench v2.0
 ============================================================
-  编译: gcc -O0 -o latency_test_x64 latency_test_x64.c -lm
-  运行: ./latency_test_x64 [迭代次数] [测试次数]
+  编译: gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
+  运行: ./cpu-latency-bench [迭代次数] [测试次数]
 ============================================================
 
 参数: 迭代=1000000, 测试次数=3, 容差=50%
