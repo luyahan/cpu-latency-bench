@@ -1,76 +1,76 @@
 # CPU Latency Bench
 
-x86/x64 CPU 指令延迟测量工具
+x86/x64 CPU instruction latency measurement tool.
 
-## 编译运行
+## Build & Run
 
 ```bash
 gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
-./cpu-latency-bench [迭代次数] [测试次数]
+./cpu-latency-bench [iterations] [runs]
 ```
 
-## 参数
+## Parameters
 
-- `迭代次数`: 每次测试的循环次数 (默认 1000000)
-- `测试次数`: 取平均的测试次数 (默认 3)
+- `iterations`: Loop count per test (default 1000000)
+- `runs`: Number of test runs for averaging (default 3)
 
-## 输出示例
+## Output Example
 
 ```
 ============================================================
-           CPU Latency Bench v2.0
+           CPU Latency Benchmark v2.0
 ============================================================
-  编译: gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
-  运行: ./cpu-latency-bench [迭代次数] [测试次数]
+  Compile: gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
+  Run: ./cpu-latency-bench [iterations] [runs]
 ============================================================
 
-参数: 迭代=1000000, 测试次数=3, 容差=50%
+Params: iter=1000000, runs=3, tolerance=50%
 
-指令     类别   预期   实测   结果
+Instr     Cat    Expect  Actual   Result
 ------------------------------------------------------------
-NOP        基础   1.00     1.07     [PASS]
-ADD        算术   1.00     0.82     [PASS]
-SUB        算术   1.00     0.83     [PASS]
+NOP        Basic   1.00     1.07     [PASS]
+ADD        ALU     1.00     0.82     [PASS]
+SUB        ALU     1.00     0.83     [PASS]
 ...
 ============================================================
-结果: 10/13 通过 (76.9%)
+Result: 10/13 passed (76.9%)
 ```
 
-## 添加新指令
+## Add New Instructions
 
-在代码中找到 `/* 在这里添加新指令测试 */` 部分，使用宏添加：
+Find `/* Add new instruction tests here */` section and use the macro:
 
 ```c
-TEST_INSN(指令名, "类别", 预期cycles, "汇编指令")
+TEST_INSN(name, "Category", expected_cycles, "asm_instruction")
 ```
 
-然后在 `init_tests()` 中注册：
+Then register in `init_tests()`:
 
 ```c
-register_test("指令名", "类别", 预期值, test_函数名);
+register_test("NAME", "Category", expected, test_func);
 ```
 
-**示例：添加 ROL 指令**
+**Example: Add ROL instruction**
 ```c
-TEST_INSN(rol, "位移", 1.0, "rol $1, %eax")
+TEST_INSN(rol, "Shift", 1.0, "rol $1, %eax")
 // ...
-register_test("ROL", "位移", 1.0, test_rol);
+register_test("ROL", "Shift", 1.0, test_rol);
 ```
 
-## 当前支持的指令
+## Supported Instructions
 
-| 类别 | 指令 |
-|------|------|
-| 基础 | NOP |
-| 算术 | ADD, SUB |
-| 逻辑 | XOR, AND, OR, NOT |
-| 乘除 | IMUL |
-| 位移 | SHL, SHR |
-| 移动 | MOV |
-| 比较 | CMP, TEST |
+| Category | Instructions |
+|----------|--------------|
+| Basic    | NOP          |
+| ALU      | ADD, SUB     |
+| Logic    | XOR, AND, OR, NOT |
+| Mul      | IMUL         |
+| Shift    | SHL, SHR     |
+| Move     | MOV          |
+| Cmp      | CMP, TEST    |
 
-## 注意事项
+## Notes
 
-- WSL/虚拟化环境下部分指令测量可能不准确
-- 某些指令 (如 PUSH/POP) 在用户态可能崩溃
-- 建议在真实硬件上运行以获得准确数据
+- Measurements may be inaccurate under WSL/virtualization
+- Some instructions (e.g., PUSH/POP) may crash in user mode
+- Run on real hardware for accurate data

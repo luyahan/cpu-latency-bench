@@ -1,32 +1,32 @@
-# x64 指令延迟测试对比报告
+# x64 Instruction Latency Benchmark Report
 
-## 测试环境
-- **平台**: WSL2 (可能与真实硬件有差异)
-- **编译器**: GCC -O0
-- **测试方法**: RDTSC 循环测试
-
----
-
-## 官方数据 vs 实测结果对比
-
-| 指令类别 | 指令 | 官方参考 (Intel Skylake) | 实测结果 | 差异分析 |
-|----------|------|-------------------------|----------|----------|
-| **空操作** | `nop` | 1 cycle | 1.04 cycle | ✅ 吻合 |
-| **算术运算** | `add r32, r32` | 1 cycle | 1.11 cycle | ✅ 吻合 |
-| **算术运算** | `sub r32, r32` | 1 cycle | 2.30 cycle | ⚠️ 偏高 |
-| **逻辑运算** | `xor r32, r32` | 1 cycle | 1.03 cycle | ✅ 吻合 |
-| **乘法** | `imul r32, r32` | 3-4 cycle | 2.50 cycle | ⚠️ 偏低 |
-| **位移** | `shl r32, 1` | 1 cycle | 1.22 cycle | ✅ 接近 |
-| **栈操作** | `push/pop` | 1-2 cycle | 2.09 cycle | ✅ 接近 |
+## Test Environment
+- **Platform**: WSL2 (may differ from real hardware)
+- **Compiler**: GCC -O0
+- **Method**: RDTSC loop testing
 
 ---
 
-## 官方数据来源
+## Official Data vs Measured Results
 
-### Intel 官方手册 (Intel® 64 and IA-32 Architectures Optimization Reference Manual)
+| Category | Instruction | Official (Intel Skylake) | Measured | Analysis |
+|----------|-------------|--------------------------|----------|----------|
+| **NOP** | `nop` | 1 cycle | 1.04 cycle | ✅ Match |
+| **ALU** | `add r32, r32` | 1 cycle | 1.11 cycle | ✅ Match |
+| **ALU** | `sub r32, r32` | 1 cycle | 2.30 cycle | ⚠️ Higher |
+| **Logic** | `xor r32, r32` | 1 cycle | 1.03 cycle | ✅ Match |
+| **Mul** | `imul r32, r32` | 3-4 cycle | 2.50 cycle | ⚠️ Lower |
+| **Shift** | `shl r32, 1` | 1 cycle | 1.22 cycle | ✅ Close |
+| **Stack** | `push/pop` | 1-2 cycle | 2.09 cycle | ✅ Close |
 
-| 指令 | Latency | Throughput | CPU 型号 |
-|------|---------|------------|----------|
+---
+
+## Official Data Sources
+
+### Intel Manual (Intel® 64 and IA-32 Architectures Optimization Reference Manual)
+
+| Instruction | Latency | Throughput | CPU |
+|------------|---------|------------|-----|
 | ADD/SUB | 1 | 0.5 | Skylake |
 | XOR (reg, reg) | 1 | 0.5 | Skylake |
 | IMUL (32-bit) | 3 | 1 | Skylake |
@@ -40,10 +40,10 @@
 | LOAD (L1 hit) | 4 | 1 | Skylake |
 | LOAD (L2 hit) | 12 | ~5 | Skylake |
 
-### AMD Zen 3 参考
+### AMD Zen 3 Reference
 
-| 指令 | Latency | Throughput |
-|------|---------|------------|
+| Instruction | Latency | Throughput |
+|------------|---------|------------|
 | ADD/SUB | 1 | 0.5 |
 | IMUL | 3 | 1 |
 | XOR | 1 | 0.33 |
@@ -51,43 +51,36 @@
 
 ---
 
-## 差异原因分析
+## Difference Analysis
 
-1. **SUB 偏高 (2.30 vs 1)**：
-   - 可能是循环开销或 CPU 调度影响
+1. **SUB higher (2.30 vs 1)**:
+   - Possible loop overhead or CPU scheduling impact
 
-2. **IMUL 偏低 (2.50 vs 3-4)**：
-   - 可能是 CPU 睿频或虚拟化影响
-   - 现代 CPU 乘法单元优化
+2. **IMUL lower (2.50 vs 3-4)**:
+   - Possible CPU turbo or virtualization impact
+   - Modern CPU multiplication unit optimization
 
-3. **测量误差**：
-   - WSL2 虚拟化层引入额外开销
-   - 建议在真实硬件上测试
+3. **Measurement error**:
+   - WSL2 virtualization layer adds overhead
+   - Recommend testing on real hardware
 
 ---
 
-## 测试用例代码
+## Test Code
 
 ```c
-/*
- * x64 指令延迟自动化测试
- * 生成对比报告
- */
-
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-// 测试数据结构
 typedef struct {
-    const char* name;        // 指令名称
-    const char* asm_code;   // 汇编指令
-    double expected;        // 官方预期值
-    double measured;        // 实测值
+    const char* name;
+    const char* asm_code;
+    double expected;
+    double measured;
 } TestCase;
 
-// 测试结果判定
-#define TOLERANCE 0.5  // 50% 容差
+#define TOLERANCE 0.5
 
 int main() {
     TestCase tests[] = {
@@ -103,27 +96,25 @@ int main() {
     int passed = 0;
     
     printf("========================================\n");
-    printf("x64 指令延迟测试报告\n");
+    printf("x64 Instruction Latency Test Report\n");
     printf("========================================\n\n");
     
     for (int i = 0; i < n; i++) {
         double diff = tests[i].measured - tests[i].expected;
         double diff_pct = (diff / tests[i].expected) * 100;
-        
-        // 容差检查
         int ok = (diff_pct >= -TOLERANCE * 100 && diff_pct <= TOLERANCE * 100);
         
         printf("[%s] %s\n", ok ? "PASS" : "FAIL", tests[i].name);
-        printf("  指令:     %s\n", tests[i].asm_code);
-        printf("  预期:     %.2f cycles\n", tests[i].expected);
-        printf("  实测:     %.2f cycles\n", tests[i].measured);
-        printf("  差异:     %.1f%%\n\n", diff_pct);
+        printf("  Instruction: %s\n", tests[i].asm_code);
+        printf("  Expected:    %.2f cycles\n", tests[i].expected);
+        printf("  Measured:    %.2f cycles\n", tests[i].measured);
+        printf("  Diff:        %.1f%%\n\n", diff_pct);
         
         if (ok) passed++;
     }
     
     printf("========================================\n");
-    printf("结果: %d/%d 通过\n", passed, n);
+    printf("Result: %d/%d passed\n", passed, n);
     
     return (passed == n) ? 0 : 1;
 }
@@ -131,22 +122,20 @@ int main() {
 
 ---
 
-## 结论
+## Conclusion
 
-| 指标 | 结果 |
-|------|------|
-| 测试指令数 | 6 |
-| 通过数 | 4 |
-| 失败数 | 2 |
-| 通过率 | 67% |
+| Metric | Result |
+|--------|--------|
+| Instructions tested | 6 |
+| Passed | 4 |
+| Failed | 2 |
+| Pass rate | 67% |
 
-**主要问题**：虚拟化环境导致部分指令测量不准确，建议在真实 x64 硬件上复测。
+**Note**: Virtualization affects some measurements; real hardware recommended.
 
 ---
 
-## 附录：完整官方数据表
-
-### 常用整数指令 (Intel Skylake)
+## Appendix: Full Official Data (Intel Skylake)
 
 ```
 ADD       Latency: 1    Throughput: 0.5
