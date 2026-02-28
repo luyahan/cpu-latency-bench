@@ -1,7 +1,7 @@
 /*
- * x64 指令延迟测试框架 v2.0
- * 编译: gcc -O0 -o latency_test_x64 latency_test_x64.c -lm
- * 运行: ./latency_test_x64 [迭代次数] [测试次数]
+ * x64 Instruction Latency Benchmark v2.0
+ * Compile: gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm
+ * Run: ./cpu-latency-bench [iterations] [runs]
  */
 
 #include <stdint.h>
@@ -12,14 +12,14 @@
 
 __attribute__((optimize("O0")))
 
-/* 底层工具 */
+/* Low-level utilities */
 static inline uint64_t rdtsc(void) {
     unsigned int lo, hi;
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
     return ((uint64_t)hi << 32) | lo;
 }
 
-/* 测试宏 - 使用这个简化新指令添加 */
+/* Test macro - use this to add new instructions */
 #define TEST_INSN(name, category, expected, asm_code) \
     static double test_##name(int64_t iter) { \
         volatile int64_t count = iter; \
@@ -32,38 +32,38 @@ static inline uint64_t rdtsc(void) {
     }
 
 /* ============================================
- * 在这里添加新指令测试
+ * Add new instruction tests here
  * ============================================ */
 
-// 基础运算
-TEST_INSN(nop,     "基础", 1.0, "nop")
-TEST_INSN(add,     "算术", 1.0, "add %eax, %eax")
-TEST_INSN(sub,     "算术", 1.0, "sub %eax, %eax")
-TEST_INSN(xor,     "逻辑", 1.0, "xor %eax, %eax")
-TEST_INSN(and,     "逻辑", 1.0, "and %eax, %eax")
-TEST_INSN(or,      "逻辑", 1.0, "or %eax, %eax")
-TEST_INSN(not,     "逻辑", 1.0, "not %eax")
+// Basic arithmetic
+TEST_INSN(nop,     "Basic", 1.0, "nop")
+TEST_INSN(add,     "ALU",   1.0, "add %eax, %eax")
+TEST_INSN(sub,     "ALU",   1.0, "sub %eax, %eax")
+TEST_INSN(xor,     "Logic", 1.0, "xor %eax, %eax")
+TEST_INSN(and,     "Logic", 1.0, "and %eax, %eax")
+TEST_INSN(or,      "Logic", 1.0, "or %eax, %eax")
+TEST_INSN(not,     "Logic", 1.0, "not %eax")
 
-// 乘除法
-TEST_INSN(imul,    "乘除", 3.0, "imul %eax, %eax")
+// Mul/Div
+TEST_INSN(imul,    "Mul",   3.0, "imul %eax, %eax")
 
-// 位移
-TEST_INSN(shl,     "位移", 1.0, "shl $1, %eax")
-TEST_INSN(shr,     "位移", 1.0, "shr $1, %eax")
+// Shift
+TEST_INSN(shl,     "Shift", 1.0, "shl $1, %eax")
+TEST_INSN(shr,     "Shift", 1.0, "shr $1, %eax")
 
-// 数据移动
-TEST_INSN(mov,     "移动", 1.0, "mov %eax, %ebx")
+// Data move
+TEST_INSN(mov,     "Move",  1.0, "mov %eax, %ebx")
 
-// 比较
-TEST_INSN(cmp,     "比较", 1.0, "cmp %eax, %eax")
-TEST_INSN(test,    "比较", 1.0, "test %eax, %eax")
+// Compare
+TEST_INSN(cmp,     "Cmp",   1.0, "cmp %eax, %eax")
+TEST_INSN(test,    "Cmp",   1.0, "test %eax, %eax")
 
-/* 添加新指令示例:
- * TEST_INSN(指令名, "类别", 预期值, "汇编指令")
+/* Add new instruction example:
+ * TEST_INSN(rol, "Shift", 1.0, "rol $1, %eax")
  */
 
 /* ============================================
- * 指令注册表
+ * Instruction registry
  * ============================================ */
 
 typedef struct {
@@ -82,24 +82,24 @@ static void register_test(const char* n, const char* c, double e, double (*f)(in
 }
 
 static void init_tests(void) {
-    register_test("NOP",   "基础", 1.0, test_nop);
-    register_test("ADD",   "算术", 1.0, test_add);
-    register_test("SUB",   "算术", 1.0, test_sub);
-    register_test("XOR",   "逻辑", 1.0, test_xor);
-    register_test("AND",   "逻辑", 1.0, test_and);
-    register_test("OR",    "逻辑", 1.0, test_or);
-    register_test("NOT",   "逻辑", 1.0, test_not);
-    register_test("IMUL",  "乘除", 3.0, test_imul);
-    register_test("SHL",   "位移", 1.0, test_shl);
-    register_test("SHR",   "位移", 1.0, test_shr);
-    register_test("MOV",   "移动", 1.0, test_mov);
-    register_test("CMP",   "比较", 1.0, test_cmp);
-    register_test("TEST",  "比较", 1.0, test_test);
-    /* 在这里添加更多: register_test("新指令", "类别", 预期值, test_函数); */
+    register_test("NOP",   "Basic", 1.0, test_nop);
+    register_test("ADD",   "ALU",   1.0, test_add);
+    register_test("SUB",   "ALU",   1.0, test_sub);
+    register_test("XOR",   "Logic", 1.0, test_xor);
+    register_test("AND",   "Logic", 1.0, test_and);
+    register_test("OR",    "Logic", 1.0, test_or);
+    register_test("NOT",   "Logic", 1.0, test_not);
+    register_test("IMUL",  "Mul",   3.0, test_imul);
+    register_test("SHL",   "Shift", 1.0, test_shl);
+    register_test("SHR",   "Shift", 1.0, test_shr);
+    register_test("MOV",   "Move",  1.0, test_mov);
+    register_test("CMP",   "Cmp",   1.0, test_cmp);
+    register_test("TEST",  "Cmp",   1.0, test_test);
+    /* Add more: register_test("NEW", "Category", expected, test_func); */
 }
 
 /* ============================================
- * 主程序
+ * Main program
  * ============================================ */
 
 #define DEFAULT_ITER 1000000
@@ -116,15 +116,15 @@ int main(int argc, char* argv[]) {
     init_tests();
     
     printf("============================================================\n");
-    printf("           x64 指令延迟测试框架 v2.0\n");
+    printf("           CPU Latency Benchmark v2.0\n");
     printf("============================================================\n");
-    printf("  编译: gcc -O0 -o latency_test_x64 latency_test_x64.c -lm\n");
-    printf("  运行: ./latency_test_x64 [迭代次数] [测试次数]\n");
+    printf("  Compile: gcc -O0 -o cpu-latency-bench cpu-latency-bench.c -lm\n");
+    printf("  Run: ./cpu-latency-bench [iterations] [runs]\n");
     printf("============================================================\n\n");
     
-    printf("参数: 迭代=%ld, 测试次数=%d, 容差=%.0f%%\n\n", iter, runs, TOLERANCE*100);
+    printf("Params: iter=%ld, runs=%d, tolerance=%.0f%%\n\n", iter, runs, TOLERANCE*100);
     
-    printf("%-10s %-8s %-8s %-8s %-6s\n", "指令", "类别", "预期", "实测", "结果");
+    printf("%-10s %-8s %-8s %-8s %-6s\n", "Instr", "Cat", "Expect", "Actual", "Result");
     printf("------------------------------------------------------------\n");
     
     int passed = 0;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
     }
     
     printf("------------------------------------------------------------\n");
-    printf("结果: %d/%d 通过 (%.1f%%)\n", passed, g_count, (double)passed/g_count*100);
+    printf("Result: %d/%d passed (%.1f%%)\n", passed, g_count, (double)passed/g_count*100);
     
     return 0;
 }
