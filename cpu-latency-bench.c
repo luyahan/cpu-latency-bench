@@ -31,24 +31,7 @@ static inline uint64_t rdtsc(void) {
         return (end - start) / (double)iter; \
     }
 
-#define TEST_FPU(name, asm_code) \
-    static double test_##name(int64_t iter) { \
-        volatile int64_t count = iter; \
-        __asm__ volatile ("finit"); \
-        uint64_t start = rdtsc(); \
-        for (volatile int64_t i = count; i > 0; --i) __asm__ volatile (asm_code); \
-        uint64_t end = rdtsc(); \
-        return (end - start) / (double)iter; \
-    }
-
-#define TEST_SSE(name, asm_code) \
-    static double test_##name(int64_t iter) { \
-        volatile int64_t count = iter; \
-        uint64_t start = rdtsc(); \
-        for (volatile int64_t i = count; i > 0; --i) __asm__ volatile (asm_code); \
-        uint64_t end = rdtsc(); \
-        return (end - start) / (double)iter; \
-    }
+#define TEST_SSE(name, asm_code) TEST(name, asm_code)
 
 /* ==================== Test Functions ==================== */
 
@@ -67,65 +50,25 @@ TEST(mov,     "mov %eax, %ebx")
 TEST(cmp,     "cmp %eax, %eax")
 TEST(test,    "test %eax, %eax")
 
-// x87 FPU - finit BEFORE loop
-static double test_fadd(int64_t iter) {
-    volatile int64_t count = iter;
-    __asm__ volatile ("finit");           // Once before loop
-    uint64_t start = rdtsc();
-    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fadd %st(0), %st(0)");
-    uint64_t end = rdtsc();
-    return (end - start) / (double)iter;
-}
+// SSE Scalar (32-bit)
+TEST(addss,  "addss %xmm0, %xmm0")
+TEST(mulss,  "mulss %xmm0, %xmm0")
+TEST(divss,  "divss %xmm0, %xmm0")
+TEST(sqrtss, "sqrtss %xmm0, %xmm0")
 
-static double test_fsub(int64_t iter) {
-    volatile int64_t count = iter;
-    __asm__ volatile ("finit");
-    uint64_t start = rdtsc();
-    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fsub %st(0), %st(0)");
-    uint64_t end = rdtsc();
-    return (end - start) / (double)iter;
-}
+// SSE Scalar (64-bit)
+TEST(addsd,  "addsd %xmm0, %xmm0")
+TEST(mulsd,  "mulsd %xmm0, %xmm0")
+TEST(divsd,  "divsd %xmm0, %xmm0")
+TEST(sqrtsd, "sqrtsd %xmm0, %xmm0")
 
-static double test_fmul(int64_t iter) {
-    volatile int64_t count = iter;
-    __asm__ volatile ("finit");
-    uint64_t start = rdtsc();
-    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fmul %st(0), %st(0)");
-    uint64_t end = rdtsc();
-    return (end - start) / (double)iter;
-}
+// Conversion
+TEST(cvtsi2ss, "cvtsi2ss %eax, %xmm0")
+TEST(cvtss2si, "cvtss2si %xmm0, %eax")
 
-static double test_fdiv(int64_t iter) {
-    volatile int64_t count = iter;
-    __asm__ volatile ("finit");
-    uint64_t start = rdtsc();
-    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fdiv %st(0), %st(0)");
-    uint64_t end = rdtsc();
-    return (end - start) / (double)iter;
-}
-
-static double test_fsqrt(int64_t iter) {
-    volatile int64_t count = iter;
-    __asm__ volatile ("finit");
-    uint64_t start = rdtsc();
-    for (volatile int64_t i = count; i > 0; --i) __asm__ volatile ("fsqrt");
-    uint64_t end = rdtsc();
-    return (end - start) / (double)iter;
-}
-
-// SSE Scalar
-TEST_SSE(addss,  "addss %xmm0, %xmm0")
-TEST_SSE(mulss,  "mulss %xmm0, %xmm0")
-TEST_SSE(divss,  "divss %xmm0, %xmm0")
-TEST_SSE(sqrtss, "sqrtss %xmm0, %xmm0")
-TEST_SSE(addsd,  "addsd %xmm0, %xmm0")
-TEST_SSE(mulsd,  "mulsd %xmm0, %xmm0")
-TEST_SSE(divsd,  "divsd %xmm0, %xmm0")
-TEST_SSE(sqrtsd, "sqrtsd %xmm0, %xmm0")
-TEST_SSE(cvtsi2ss, "cvtsi2ss %eax, %xmm0")
-TEST_SSE(cvtss2si, "cvtss2si %xmm0, %eax")
-TEST_SSE(movss, "movss %xmm0, %xmm1")
-TEST_SSE(movsd, "movsd %xmm0, %xmm1")
+// Move
+TEST(movss, "movss %xmm0, %xmm1")
+TEST(movsd, "movsd %xmm0, %xmm1")
 
 /* ==================== Registry ==================== */
 
@@ -151,12 +94,6 @@ static TestEntry g_tests[] = {
     {"MOV",   "Move",  1.0, test_mov},
     {"CMP",   "Cmp",   1.0, test_cmp},
     {"TEST",  "Cmp",   1.0, test_test},
-    // x87
-    {"FADD",  "x87", 4.0, test_fadd},
-    {"FSUB",  "x87", 4.0, test_fsub},
-    {"FMUL",  "x87", 5.0, test_fmul},
-    {"FDIV",  "x87", 20.0, test_fdiv},
-    {"FSQRT", "x87", 20.0, test_fsqrt},
     // SSE 32-bit
     {"ADDSS",  "SSE", 4.0, test_addss},
     {"MULSS",  "SSE", 4.0, test_mulss},
